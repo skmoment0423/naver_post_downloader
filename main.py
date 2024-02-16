@@ -10,7 +10,7 @@ import aiohttp
 
 async def queue_downloads(url):
     title = urlparse(url).query.split('volumeNo=')[1].split('&')[0]
-    desired_path = Path.cwd() / title
+    desired_path = Path.cwd()
     desired_path.mkdir(parents=False, exist_ok=True)
     headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:70.0) Gecko/20100101 Firefox/70.0'}
     async with aiohttp.ClientSession(headers=headers) as session:
@@ -22,7 +22,7 @@ async def queue_downloads(url):
                     picture_url = linkdata['src']
                     picture_id = unquote(urlparse(picture_url).path.split('/')[-1])
                     picture_name = re.sub('[<>:\"/|?*]', ' ', picture_id).strip()
-                    picture_path = '.' / picture_name
+                    picture_path = desired_path / picture_name
                     if not picture_path.is_file():
                         await download(session, picture_url, picture_path)
                 else:
