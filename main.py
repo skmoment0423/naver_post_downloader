@@ -22,7 +22,7 @@ async def queue_downloads(url):
                     picture_url = linkdata['src']
                     picture_id = unquote(urlparse(picture_url).path.split('/')[-1])
                     picture_name = re.sub('[<>:\"/|?*]', ' ', picture_id).strip()
-                    picture_path = desired_path / picture_name
+                    picture_path = '.' / picture_name
                     if not picture_path.is_file():
                         await download(session, picture_url, picture_path)
                 else:
