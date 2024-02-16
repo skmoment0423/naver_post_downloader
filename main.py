@@ -10,7 +10,7 @@ import aiohttp
 
 async def queue_downloads(url):
     title = urlparse(url).query.split('volumeNo=')[1].split('&')[0]
-    desired_path = Path.home()
+    desired_path = Path.home() / title
     desired_path.mkdir(parents=False, exist_ok=True)
     headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:70.0) Gecko/20100101 Firefox/70.0'}
     async with aiohttp.ClientSession(headers=headers) as session:
