@@ -36,7 +36,8 @@ async def download(session, picture_url, picture_path):
                 with open(picture_path, 'wb') as f:
                     f.write(await r.read())
             else:
-                st.error(f'Error {r.status} while getting request for {picture_url}')
+                pass
+                # st.error(f'Error {r.status} while getting request for {picture_url}')
     except Exception as e:
         st.error(f"An error occurred while downloading {picture_url}: {str(e)}")
 
