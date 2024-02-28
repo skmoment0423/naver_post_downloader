@@ -7,21 +7,15 @@ from urllib.parse import unquote, urlparse
 import streamlit as st
 import aiohttp
 
-# 사용자에게 상태 메시지를 표시하기 위한 Streamlit 컴포넌트 추가
-progress_bar = st.progress(0)
-status_text = st.empty()
-
-async def queue_downloads(url):
+async def queue_downloads(url, download_folder):
     try:
         title = urlparse(url).query.split('volumeNo=')[1].split('&')[0]
-        desired_path = Path.cwd() / title
+        desired_path = Path(download_folder) / title  # 다운로드 폴더를 사용자가 지정한 폴더로 변경
         desired_path.mkdir(parents=False, exist_ok=True)
         headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:70.0) Gecko/20100101 Firefox/70.0'}
         async with aiohttp.ClientSession(headers=headers) as session:
             async with session.get(url) as response:
                 text = await response.text()
-                total_images = len(re.findall("data-linkdata=\'", text))  # 전체 이미지 수 계산
-                current_image = 0  # 현재 다운로드된 이미지 수 초기화
                 for item in text.split("data-linkdata=\'")[1:]:
                     linkdata = loadjson(item.split("\'>\n")[0])
                     if 'src' in linkdata:
@@ -31,40 +25,27 @@ async def queue_downloads(url):
                         picture_path = desired_path / picture_name
                         if not picture_path.is_file():
                             await download(session, picture_url, picture_path)
-                            current_image += 1  # 이미지 다운로드 시 카운트 증가
-                            # 다운로드 진행 상황 업데이트
-                            progress_bar.progress(current_image / total_images)
-                            status_text.text(f'Downloading... ({current_image}/{total_images})')
-                    else:
-                        # 사용자에게 오류 메시지 표시
-                        status_text.text(f"Error: 'src' not found in link data: {linkdata}")
     except Exception as e:
-        # 사용자에게 예외 처리 메시지 표시
-        status_text.text(f"An error occurred: {str(e)}")
+        st.error(f"An error occurred: {str(e)}")
 
 async def download(session, picture_url, picture_path):
     try:
         async with session.get(picture_url) as r:
             if r.status == 200:
-                # 이미지 다운로드 및 파일 저장
-                picture_path.write_bytes(await r.read())
-                # st.write(f'Downloaded {picture_url}')  # 사용자에게 다운로드 완료 메시지 표시
+                # 이미지를 사용자의 로컬 PC의 Downloads 폴더에 저장
+                with open(picture_path, 'wb') as f:
+                    f.write(await r.read())
             else:
-                # 사용자에게 오류 메시지 표시
-                st.write(f'Error {r.status} while getting request for {picture_url}')
+                st.error(f'Error {r.status} while getting request for {picture_url}')
     except Exception as e:
-        # 사용자에게 예외 처리 메시지 표시
-        st.write(f"An error occurred while downloading {picture_url}: {str(e)}")
+        st.error(f"An error occurred while downloading {picture_url}: {str(e)}")
 
 def main():
     st.title("NAVER POST DOWNLOADER")
     post_url = st.text_input("네이버 포스트 URL을 입력하세요")
-    if post_url:
-        if st.button("다운로드"):
-            # 다운로드가 시작되면 진행 상황을 리셋하고 메시지를 업데이트
-            progress_bar.progress(0)
-            status_text.text("Downloading...")
-            asyncio.run(queue_downloads(post_url))
+    download_folder = st.text_input("다운로드할 폴더 경로를 입력하세요", value=str(Path.home() / "Downloads"))
+    if post_url and st.button("다운로드"):
+        asyncio.run(queue_downloads(post_url, download_folder))
 
 if __name__ == '__main__':
     assert version_info >= (3, 7), 'Script requires Python 3.7+.'
